@@ -24,6 +24,7 @@ class Keys:
         ALIGNMENT            = "general.alignment"
         NAME                 = "general.name"
         AUTHOR               = "general.author"
+        VERSION              = "general.version"
         URL                  = "general.url"
         DESCRIPTION          = "general.description"
         LICENSE              = "general.license"
@@ -100,6 +101,7 @@ class MODEL_ARCH(IntEnum):
     LLAMA      = auto()
     FALCON     = auto()
     BAICHUAN   = auto()
+    GROK       = auto()
     GPT2       = auto()
     GPTJ       = auto()
     GPTNEOX    = auto()
@@ -122,6 +124,7 @@ class MODEL_ARCH(IntEnum):
     GEMMA      = auto()
     STARCODER2 = auto()
     MAMBA      = auto()
+    XVERSE     = auto()
     COMMAND_R  = auto()
 
 
@@ -167,6 +170,7 @@ MODEL_ARCH_NAMES: dict[MODEL_ARCH, str] = {
     MODEL_ARCH.LLAMA:          "llama",
     MODEL_ARCH.FALCON:         "falcon",
     MODEL_ARCH.BAICHUAN:       "baichuan",
+    MODEL_ARCH.GROK:           "grok",
     MODEL_ARCH.GPT2:           "gpt2",
     MODEL_ARCH.GPTJ:           "gptj",
     MODEL_ARCH.GPTNEOX:        "gptneox",
@@ -189,6 +193,7 @@ MODEL_ARCH_NAMES: dict[MODEL_ARCH, str] = {
     MODEL_ARCH.GEMMA:          "gemma",
     MODEL_ARCH.STARCODER2:     "starcoder2",
     MODEL_ARCH.MAMBA:          "mamba",
+    MODEL_ARCH.XVERSE:         "xverse",
     MODEL_ARCH.COMMAND_R:      "command-r",
 }
 
@@ -217,9 +222,9 @@ TENSOR_NAMES: dict[MODEL_TENSOR, str] = {
     MODEL_TENSOR.FFN_DOWN:        "blk.{bid}.ffn_down",
     MODEL_TENSOR.FFN_UP:          "blk.{bid}.ffn_up",
     MODEL_TENSOR.FFN_ACT:         "blk.{bid}.ffn",
-    MODEL_TENSOR.FFN_GATE_EXP:    "blk.{bid}.ffn_gate.{xid}",
-    MODEL_TENSOR.FFN_DOWN_EXP:    "blk.{bid}.ffn_down.{xid}",
-    MODEL_TENSOR.FFN_UP_EXP:      "blk.{bid}.ffn_up.{xid}",
+    MODEL_TENSOR.FFN_GATE_EXP:    "blk.{bid}.ffn_gate_exps",
+    MODEL_TENSOR.FFN_DOWN_EXP:    "blk.{bid}.ffn_down_exps",
+    MODEL_TENSOR.FFN_UP_EXP:      "blk.{bid}.ffn_up_exps",
     MODEL_TENSOR.LAYER_OUT_NORM:  "blk.{bid}.layer_output_norm",
     MODEL_TENSOR.SSM_IN:          "blk.{bid}.ssm_in",
     MODEL_TENSOR.SSM_CONV1D:      "blk.{bid}.ssm_conv1d",
@@ -250,6 +255,28 @@ MODEL_TENSORS: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
         MODEL_TENSOR.FFN_GATE_EXP,
         MODEL_TENSOR.FFN_DOWN_EXP,
         MODEL_TENSOR.FFN_UP_EXP,
+    ],
+    MODEL_ARCH.GROK: [
+        MODEL_TENSOR.TOKEN_EMBD,
+        MODEL_TENSOR.OUTPUT_NORM,
+        MODEL_TENSOR.OUTPUT,
+        MODEL_TENSOR.ROPE_FREQS,
+        MODEL_TENSOR.ATTN_NORM,
+        MODEL_TENSOR.ATTN_Q,
+        MODEL_TENSOR.ATTN_K,
+        MODEL_TENSOR.ATTN_V,
+        MODEL_TENSOR.ATTN_OUT,
+        MODEL_TENSOR.ATTN_ROT_EMBD,
+        MODEL_TENSOR.ATTN_OUT_NORM,
+        MODEL_TENSOR.FFN_GATE_INP,
+        MODEL_TENSOR.FFN_NORM,
+        MODEL_TENSOR.FFN_GATE,
+        MODEL_TENSOR.FFN_DOWN,
+        MODEL_TENSOR.FFN_UP,
+        MODEL_TENSOR.FFN_GATE_EXP,
+        MODEL_TENSOR.FFN_DOWN_EXP,
+        MODEL_TENSOR.FFN_UP_EXP,
+        MODEL_TENSOR.LAYER_OUT_NORM,
     ],
     MODEL_ARCH.GPTNEOX: [
         MODEL_TENSOR.TOKEN_EMBD,
@@ -341,6 +368,9 @@ MODEL_TENSORS: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
         MODEL_TENSOR.FFN_DOWN,
         MODEL_TENSOR.FFN_UP,
         MODEL_TENSOR.FFN_ACT,
+        MODEL_TENSOR.ATTN_Q_NORM,
+        MODEL_TENSOR.ATTN_K_NORM,
+        MODEL_TENSOR.POS_EMBD,
     ],
     MODEL_ARCH.GPTJ: [
         MODEL_TENSOR.TOKEN_EMBD,
@@ -582,6 +612,22 @@ MODEL_TENSORS: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
         MODEL_TENSOR.SSM_D,
         MODEL_TENSOR.SSM_OUT,
     ],
+    MODEL_ARCH.XVERSE: [
+        MODEL_TENSOR.TOKEN_EMBD,
+        MODEL_TENSOR.OUTPUT_NORM,
+        MODEL_TENSOR.OUTPUT,
+        MODEL_TENSOR.ROPE_FREQS,
+        MODEL_TENSOR.ATTN_NORM,
+        MODEL_TENSOR.ATTN_Q,
+        MODEL_TENSOR.ATTN_K,
+        MODEL_TENSOR.ATTN_V,
+        MODEL_TENSOR.ATTN_OUT,
+        MODEL_TENSOR.ATTN_ROT_EMBD,
+        MODEL_TENSOR.FFN_NORM,
+        MODEL_TENSOR.FFN_GATE,
+        MODEL_TENSOR.FFN_DOWN,
+        MODEL_TENSOR.FFN_UP,
+    ],
     MODEL_ARCH.COMMAND_R: [
         MODEL_TENSOR.TOKEN_EMBD,
         MODEL_TENSOR.OUTPUT_NORM,
@@ -593,6 +639,8 @@ MODEL_TENSORS: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
         MODEL_TENSOR.FFN_GATE,
         MODEL_TENSOR.FFN_DOWN,
         MODEL_TENSOR.FFN_UP,
+        MODEL_TENSOR.ATTN_K_NORM,
+        MODEL_TENSOR.ATTN_Q_NORM,
     ],
     # TODO
 }
@@ -623,6 +671,10 @@ MODEL_TENSOR_SKIP: dict[MODEL_ARCH, list[MODEL_TENSOR]] = {
         MODEL_TENSOR.ATTN_ROT_EMBD,
     ],
     MODEL_ARCH.STARCODER2: [
+        MODEL_TENSOR.ROPE_FREQS,
+        MODEL_TENSOR.ATTN_ROT_EMBD,
+    ],
+    MODEL_ARCH.XVERSE: [
         MODEL_TENSOR.ROPE_FREQS,
         MODEL_TENSOR.ATTN_ROT_EMBD,
     ],
@@ -682,6 +734,7 @@ class GGMLQuantizationType(IntEnum):
     I32     = 26
     I64     = 27
     F64     = 28
+    IQ1_M   = 29
 
 
 class GGUFEndian(IntEnum):
