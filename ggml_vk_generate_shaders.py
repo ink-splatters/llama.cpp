@@ -2609,7 +2609,8 @@ layout(local_size_x = 1, local_size_y = 256, local_size_z = 1) in;
 
 layout (binding = 0) readonly buffer X {A_TYPE data_a[];};
 layout (binding = 1) readonly buffer Y {int data_b[];};
-layout (binding = 2) writeonly buffer D {D_TYPE data_d[];};
+layout (binding = 2) readonly buffer Z {float data_freq_factors[];};
+layout (binding = 3) writeonly buffer D {D_TYPE data_d[];};
 
 layout (push_constant) uniform parameter {
     uint ncols;
@@ -2622,6 +2623,7 @@ layout (push_constant) uniform parameter {
     float corr_dims[4];
     float theta_scale;
     float inv_ndims;
+    uint has_freq_facs;
 } p;
 
 float rope_yarn_ramp(const float low, const float high, const uint i0) {
@@ -2668,13 +2670,12 @@ void main() {
     const uint i  = row*p.ncols + ib*p.ndims + ic/2;
     const uint i2 = row/p.p_delta_rows;
 
-    const float cur_rot = p.inv_ndims * ic - ib;
-
     const int pos = data_b[i2];
-    const float theta_base = pos*p.freq_scale*pow(p.theta_scale, col/2.0f);
+    const float freq_factor = p.has_freq_facs != 0 ? data_freq_factors[ic/2] : 1.0f;
+    const float theta_base = pos*p.freq_scale*pow(p.theta_scale, col/2.0f) / freq_factor;
 
     float cos_theta, sin_theta;
-    rope_yarn(theta_base, uint(cur_rot), cos_theta, sin_theta);
+    rope_yarn(theta_base, ic, cos_theta, sin_theta);
 
     const float x0 = float(data_a[i + 0]);
     const float x1 = float(data_a[i + p.ndims/2]);
@@ -2877,13 +2878,16 @@ async def main():
         stream.clear()
         stream.extend((mulmat_head, shader_float_type, mulmat_body1, mulmat_load_scalar, mulmat_body2))
         tasks.append(string_to_spv("matmul_f32", "".join(stream), {"A_TYPE": "float", "B_TYPE": "float", "D_TYPE": "float"}, fp16))
-        tasks.append(string_to_spv("matmul_f32_aligned", "".join(stream), {"LOAD_VEC_A": 1, "LOAD_VEC_B": load_vec, "A_TYPE": "float", "B_TYPE": vec_type, "D_TYPE": "float"}, fp16))
+        tasks.append(string_to_spv("matmul_f32_aligned", "".join(stream), {"LOAD_VEC_A": load_vec, "LOAD_VEC_B": load_vec, "A_TYPE": vec_type, "B_TYPE": vec_type, "D_TYPE": "float"}, fp16))
+
+        tasks.append(string_to_spv("matmul_f32_f16", "".join(stream), {"A_TYPE": "float", "B_TYPE": "float16_t", "D_TYPE": "float"}, fp16))
+        tasks.append(string_to_spv("matmul_f32_f16_aligned", "".join(stream), {"LOAD_VEC_A": load_vec, "LOAD_VEC_B": load_vec, "A_TYPE": vec_type, "B_TYPE": vec_type_f16, "D_TYPE": "float"}, fp16))
 
         tasks.append(string_to_spv("matmul_f16", "".join(stream), {"A_TYPE": "float16_t", "B_TYPE": "float16_t", "D_TYPE": "float"}, fp16))
-        tasks.append(string_to_spv("matmul_f16_aligned", "".join(stream), {"LOAD_VEC_A": 1, "LOAD_VEC_B": load_vec, "A_TYPE": "float16_t", "B_TYPE": vec_type_f16, "D_TYPE": "float"}, fp16))
+        tasks.append(string_to_spv("matmul_f16_aligned", "".join(stream), {"LOAD_VEC_A": load_vec, "LOAD_VEC_B": load_vec, "A_TYPE": vec_type_f16, "B_TYPE": vec_type_f16, "D_TYPE": "float"}, fp16))
 
         tasks.append(string_to_spv("matmul_f16_f32", "".join(stream), {"A_TYPE": "float16_t", "B_TYPE": "float", "D_TYPE": "float"}, fp16))
-        tasks.append(string_to_spv("matmul_f16_f32_aligned", "".join(stream), {"LOAD_VEC_A": 1, "LOAD_VEC_B": load_vec, "A_TYPE": "float16_t", "B_TYPE": vec_type, "D_TYPE": "float"}, fp16))
+        tasks.append(string_to_spv("matmul_f16_f32_aligned", "".join(stream), {"LOAD_VEC_A": load_vec, "LOAD_VEC_B": load_vec, "A_TYPE": vec_type_f16, "B_TYPE": vec_type, "D_TYPE": "float"}, fp16))
 
         stream.clear()
         stream.extend((mulmat_head, shader_int8_ext, shader_float_type, shader_q4_0_defines, mulmat_body1, mulmat_load_q4_0, mulmat_body2))
