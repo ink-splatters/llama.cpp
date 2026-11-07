@@ -27,7 +27,6 @@
 /.cache/
 /.ccls-cache/
 /.direnv/
-/.envrc
 /.idea/
 /.swiftpm
 /.vs/
@@ -103,8 +102,9 @@ uv.lock
 
 # Nix
 
-flake.lock
 /result
+/.direnv
+/.pre-commit-config-nix.yaml
 
 # Test binaries
 
