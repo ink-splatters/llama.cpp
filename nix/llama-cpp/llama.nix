@@ -157,8 +157,9 @@ in {
           let
             webUI = config.mkLlamaWebUI {};
           in ''
-            cp -r ${webUI} tools/ui/dist
-            chmod -R u+w tools/ui/dist
+            dist=ui/apps/chat/dist
+            cp -r ${webUI} $dist
+            chmod -R u+w $dist
           ''
         );
 
