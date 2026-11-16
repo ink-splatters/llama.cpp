@@ -49,7 +49,7 @@
           module.imports = [dev];
         };
 
-        version = "0.9.0-dev.20261108";
+        version = "1.0.0-dev.20261118";
         src = builtins.path {
           path = ./.;
           name = "llama-cpp";
