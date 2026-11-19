@@ -9,13 +9,13 @@ top @ {lib, ...}: {
       inherit (top.config) src version;
       inherit (pkgs) stdenvNoCC bun;
     in
-      stdenvNoCC.mkDerivation {
+      stdenvNoCC.mkDerivation (finalAttrs: {
         pname = "llama-webui";
         inherit version;
-        src = lib.cleanSource (src + "/tools/ui");
+        src = lib.cleanSource (src + "/ui/lib/ui");
         nativeBuildInputs = [bun];
         npmDeps = pkgs.importNpmLock {
-          npmRoot = src + "/tools/ui";
+          npmRoot = finalAttrs.src;
         };
         configurePhase = ''
           runHook preConfigure
@@ -31,6 +31,6 @@ top @ {lib, ...}: {
           LLAMA_UI_OUT_DIR="$out" bun --bun --no-install run build
           runHook postInstall
         '';
-      };
+      });
   };
 }
